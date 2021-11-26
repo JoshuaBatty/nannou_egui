@@ -47,11 +47,11 @@ fn model(app: &App) -> Model {
         radius: 40.0,
         color: hsv(10.0, 0.5, 1.0),
         custom_switch_bool: false,
-        lfo1: 0.0,
-        lfo2: 0.0,
-        lfo3: 0.0,
-        lfo4: 0.0,
-        lfo5: 0.0,
+        lfo1: 0.5,
+        lfo2: 0.3,
+        lfo3: 0.6,
+        lfo4: 0.12,
+        lfo5: 0.4,
     }
 }
 
@@ -78,30 +78,38 @@ fn update(_app: &App, model: &mut Model, update: Update) {
 
     ctx.set_fonts(fonts);
 
-    egui::Window::new("EGUI window")
-        .default_size(egui::vec2(0.0, 200.0))
-        .frame(egui::containers::Frame {
-            fill: egui::Color32::from_gray(80),
-            ..Default::default()
-        })
-        .show(&ctx, |ui| {
-            ui.spacing_mut().slider_width = 180.0;
-            ui.spacing_mut().indent = 20.0; // these don't work currently
-            ui.spacing_mut().item_spacing = egui::vec2(0.0, 2.0); // these don't work currently
+    let mut style = egui::Style::default();
 
-            ui.separator();
-            ui.label("Tune parameters with ease");
-            ui.add(egui::Slider::new(radius, 10.0..=100.0).text("Radius"));
-            ui.add(toggle(custom_switch_bool));
-            //ui.add(custom_slider(custom_slider_value));
-            ui.add(mb_slider::MbSlider::new(&mut model.lfo1, 0.0..=1.0).text("Lfo 1"));
-            ui.add(mb_slider::MbSlider::new(&mut model.lfo2, 0.0..=1.0).text("Lfo 2"));
-            ui.separator();
-            ui.add(mb_slider::MbSlider::new(&mut model.lfo3, 0.0..=1.0).text("Lfo 3"));
-            ui.add(mb_slider::MbSlider::new(&mut model.lfo4, 0.0..=1.0).text("Lfo 4"));
-            ui.add(mb_slider::MbSlider::new(&mut model.lfo5, 0.0..=1.0).text("Lfo 5"));
-            nannou_egui::edit_color(ui, color);
-        });
+    style.visuals.widgets.inactive.corner_radius = 2.0;
+    style.visuals.widgets.hovered.corner_radius = 2.0;
+    style.visuals.widgets.active.corner_radius = 2.0;
+
+    style.visuals.widgets.inactive.bg_fill = egui::Color32::from_gray(163);
+    style.visuals.widgets.hovered.bg_fill = egui::Color32::from_gray(163);
+    style.visuals.widgets.active.bg_fill = egui::Color32::from_gray(183);
+
+    style.visuals.widgets.inactive.bg_stroke = egui::Stroke::new(2.0, egui::Color32::BLACK);
+    style.visuals.widgets.hovered.bg_stroke = egui::Stroke::new(2.0, egui::Color32::BLACK);
+    style.visuals.widgets.active.bg_stroke = egui::Stroke::new(2.0, egui::Color32::BLACK);
+
+    style.visuals.widgets.inactive.fg_stroke.color = egui::Color32::from_rgb(255,79,110);
+    style.visuals.widgets.hovered.fg_stroke.color = egui::Color32::from_rgb(255,79,110);
+    style.visuals.widgets.active.fg_stroke.color = egui::Color32::from_rgb(255,79,100);
+
+    style.spacing.slider_width = 180.0;
+    style.spacing.item_spacing = egui::vec2(0.0, 4.0);
+
+    egui::Area::new("my_area").fixed_pos([8.0, 8.0]).show(&ctx, |ui| {
+        ctx.set_style(style);
+        ui.colored_label(egui::Color32::WHITE, "PARAMETERS");
+        let slider_height = 36.0;
+        ui.add(mb_slider::MbSlider::new(&mut model.lfo1, 0.0..=1.0).height(slider_height).text("Lfo 1"));
+        ui.add(mb_slider::MbSlider::new(&mut model.lfo2, 0.0..=1.0).height(slider_height).text("Lfo 2"));
+        ui.add(mb_slider::MbSlider::new(&mut model.lfo3, 0.0..=1.0).height(slider_height).text("Lfo 3"));
+        ui.add(mb_slider::MbSlider::new(&mut model.lfo4, 0.0..=1.0).height(slider_height).text("Lfo 4"));
+        ui.add(mb_slider::MbSlider::new(&mut model.lfo5, 0.0..=1.0).height(slider_height).text("Lfo 5"));
+    });
+
 }
 
 fn raw_window_event(_app: &App, model: &mut Model, event: &nannou::winit::event::WindowEvent) {
@@ -112,12 +120,12 @@ fn raw_window_event(_app: &App, model: &mut Model, event: &nannou::winit::event:
 fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();
 
-    frame.clear(BLACK);
+    frame.clear(GRAY);
 
     draw.ellipse()
-        .x_y(100.0, 100.0)
-        .radius(model.radius)
-        .color(model.color);
+        .x_y(100.0, (app.time * (model.lfo1 as f32 * 10.0)).sin() * (model.lfo2 as f32 * 200.0))
+        .radius(model.lfo2 as f32 * 50.0)
+        .rgb(model.lfo3 as f32, model.lfo4 as f32, model.lfo5 as f32);
 
     draw.to_frame(app, &frame).unwrap();
 
