@@ -67,6 +67,7 @@ pub struct MbSlider<'a> {
     text_color: Option<egui::Color32>,
     min_decimals: usize,
     max_decimals: Option<usize>,
+    height: f32,
 }
 
 
@@ -109,6 +110,7 @@ impl<'a> MbSlider<'a> {
             text_color: None,
             min_decimals: 0,
             max_decimals: None,
+            height: 18.0,
         }
     }
 
@@ -217,6 +219,12 @@ impl<'a> MbSlider<'a> {
         self.fixed_decimals(0).smallest_positive(1.0)
     }
 
+    /// Set the height of the slider
+    pub fn height(mut self, height: f32) -> Self {
+        self.height = height;
+        self
+    }
+
     fn get_value(&mut self) -> f64 {
         let value = get(&mut self.get_set_value);
         if self.clamp_to_range {
@@ -267,8 +275,8 @@ impl<'a> MbSlider<'a> {
 
 impl<'a> MbSlider<'a> {
     /// Just the slider, no text
-    fn allocate_slider_space(&self, ui: &mut egui::Ui, perpendicular: f32) -> egui::Response {
-        let desired_size = egui::vec2(ui.spacing().slider_width, perpendicular);
+    fn allocate_slider_space(&self, ui: &mut egui::Ui) -> egui::Response {
+        let desired_size = egui::vec2(ui.spacing().slider_width, self.height);
         ui.allocate_response(desired_size, egui::Sense::click_and_drag())
     }
 
@@ -322,10 +330,6 @@ impl<'a> MbSlider<'a> {
         // Make sure we need to paint:
         if ui.clip_rect().intersects(response.rect) {
             let value = self.get_value();
-
-            let rail_radius = ui.painter().round_to_pixel(self.rail_radius_limit(rect));
-            let rail_rect = self.rail_rect(rect, rail_radius);
-
             let position_1d = self.position_from_value(value, position_range);
 
             let visuals = ui.style().interact(response);
@@ -339,32 +343,15 @@ impl<'a> MbSlider<'a> {
             //     // stroke: visuals.bg_stroke,
             //     // stroke: ui.visuals().widgets.inactive.bg_stroke,
             // });
-
-            
-
-            // ui.painter().add(egui::Shape::Circle {
-            //     center,
-            //     radius: self.handle_radius(rect) + visuals.expansion,
-            //     fill: visuals.bg_fill,
-            //     stroke: visuals.fg_stroke,
-            // });
-
-
-            //-------------
-            let corner_radius = 0.1 * rect.height();
         
-            let stroke = egui::Stroke::new(2.0, egui::Color32::BLACK);
             ui.painter()
-                .rect(response.rect, corner_radius, egui::Color32::from_rgb(163, 163, 163), stroke);
+                .rect(response.rect, visuals.corner_radius, visuals.bg_fill, visuals.bg_stroke);
 
-            //
-            let center = self.marker_center(position_1d, &rail_rect);
-            let mut fill_rect = rect.shrink(1.0);
-            fill_rect.set_right(center.x);
+            let mut fill_rect = response.rect.shrink(1.0);
+            fill_rect.set_right(position_1d);
 
-            let fill_colour = egui::Color32::from_rgb(255,79,110);
             ui.painter()
-                .rect_filled(fill_rect, corner_radius, fill_colour);
+                .rect_filled(fill_rect, visuals.corner_radius, visuals.fg_stroke.color);
 
             // Text
             let value = self.get_value();
@@ -376,6 +363,7 @@ impl<'a> MbSlider<'a> {
                     egui::TextStyle::Body,
                     egui::Color32::BLACK,
                 );
+    
         }
     }
 
@@ -388,8 +376,7 @@ impl<'a> MbSlider<'a> {
     }
 
     fn position_range(&self, rect: &egui::Rect) -> RangeInclusive<f32> {
-        let handle_radius = self.handle_radius(rect);
-        (rect.left() + handle_radius)..=(rect.right() - handle_radius)
+        rect.left()..=(rect.right() - 1.0)
     }
 
     fn rail_rect(&self, rect: &egui::Rect, radius: f32) -> egui::Rect {
@@ -397,11 +384,6 @@ impl<'a> MbSlider<'a> {
             egui::pos2(rect.left(), rect.center().y - radius),
             egui::pos2(rect.right(), rect.center().y + radius),
         )
-    }
-
-    fn handle_radius(&self, rect: &egui::Rect) -> f32 {
-        let limit = rect.height();
-        limit / 2.5
     }
 
     fn rail_radius_limit(&self, rect: &egui::Rect) -> f32 {
@@ -421,13 +403,7 @@ impl<'a> MbSlider<'a> {
     }
 
     fn add_contents(&mut self, ui: &mut egui::Ui) -> egui::Response {
-        let text_style = egui::TextStyle::Button;
-        let perpendicular = ui
-            .fonts()
-            .row_height(text_style)
-            .at_least(ui.spacing().interact_size.y);
-        
-        let slider_response = self.allocate_slider_space(ui, perpendicular * 2.0);
+        let slider_response = self.allocate_slider_space(ui);
         self.slider_ui(ui, &slider_response);
 
         slider_response
@@ -596,13 +572,4 @@ fn logaritmic_zero_cutoff(min: f64, max: f64) -> f64 {
     let cutoff = min_magnitude / (min_magnitude + max_magnitude);
     egui::egui_assert!(0.0 <= cutoff && cutoff <= 1.0);
     cutoff
-}
-
-fn handle_radius(rect: &egui::Rect) -> f32 {
-    rect.height() / 2.5
-}
-
-fn x_range(rect: &egui::Rect) -> RangeInclusive<f32> {
-    let handle_radius = handle_radius(rect);
-    (rect.left() + handle_radius)..=(rect.right() - handle_radius)
 }
