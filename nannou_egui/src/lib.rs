@@ -19,7 +19,7 @@ use std::{
 /// For multi-window user interfaces, you will need to create an instance of this type per-window.
 pub struct Egui {
     context: CtxRef,
-    renderer: RefCell<Renderer>,
+    pub renderer: RefCell<Renderer>,
     input: Input,
 }
 
@@ -28,7 +28,7 @@ pub struct Egui {
 ///
 /// For targeting more than one window, users should construct a `Egui` for each.
 pub struct Renderer {
-    render_pass: egui_wgpu_backend::RenderPass,
+    pub render_pass: egui_wgpu_backend::RenderPass,
     paint_jobs: Vec<ClippedMesh>,
 }
 

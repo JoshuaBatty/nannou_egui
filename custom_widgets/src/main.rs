@@ -27,6 +27,7 @@ struct Model {
     lfo3: f64,
     lfo4: f64,
     lfo5: f64,
+    texture: wgpu::Texture,
 }
 
 fn model(app: &App) -> Model {
@@ -41,6 +42,13 @@ fn model(app: &App) -> Model {
         .unwrap();
 
     let window = app.window(window_id).unwrap();
+    let device = window.device();
+    let queue = window.queue();
+    let usage = wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
+
+    // Load the image from disk and upload it to a GPU texture.
+    let path = std::path::Path::new("/Users/jbatty/Documents/rust/crates/nannou_egui/custom_widgets/assets/nature_1.jpg");
+    let texture = wgpu::Texture::load_from_path(device, queue, usage, path).unwrap();
 
     Model {
         egui: Egui::from_window(&window),
@@ -52,10 +60,11 @@ fn model(app: &App) -> Model {
         lfo3: 0.6,
         lfo4: 0.12,
         lfo5: 0.4,
+        texture,
     }
 }
 
-fn update(_app: &App, model: &mut Model, update: Update) {
+fn update(app: &App, model: &mut Model, update: Update) {
     let Model {
         ref mut egui,
         ref mut radius,
@@ -63,6 +72,16 @@ fn update(_app: &App, model: &mut Model, update: Update) {
         ref mut custom_switch_bool,
         ..
     } = *model;
+
+    let window = app.main_window();
+    let device = window.device();
+    let texture_id = egui.renderer.borrow_mut().render_pass.egui_texture_from_wgpu_texture(
+        &device,
+        &model.texture,
+        nannou::wgpu::FilterMode::Nearest
+    );
+
+    println!("texture_id: {:?}", texture_id);
 
     egui.set_elapsed_time(update.since_start);
     let ctx = egui.begin_frame();
@@ -99,6 +118,9 @@ fn update(_app: &App, model: &mut Model, update: Update) {
     style.spacing.slider_width = 180.0;
     style.spacing.item_spacing = egui::vec2(0.0, 4.0);
 
+    let [w, h] = model.texture.size();
+    let image_size = egui::Vec2::new(w as f32 * 0.2 ,h as f32 * 0.2 );
+
     egui::Area::new("my_area").fixed_pos([8.0, 8.0]).show(&ctx, |ui| {
         ctx.set_style(style);
         ui.colored_label(egui::Color32::WHITE, "PARAMETERS");
@@ -108,8 +130,8 @@ fn update(_app: &App, model: &mut Model, update: Update) {
         ui.add(mb_slider::MbSlider::new(&mut model.lfo3, 0.0..=1.0).height(slider_height).text("Lfo 3"));
         ui.add(mb_slider::MbSlider::new(&mut model.lfo4, 0.0..=1.0).height(slider_height).text("Lfo 4"));
         ui.add(mb_slider::MbSlider::new(&mut model.lfo5, 0.0..=1.0).height(slider_height).text("Lfo 5"));
+        ui.image(texture_id, image_size); 
     });
-
 }
 
 fn raw_window_event(_app: &App, model: &mut Model, event: &nannou::winit::event::WindowEvent) {
