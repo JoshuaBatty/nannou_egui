@@ -47,7 +47,7 @@ fn model(app: &App) -> Model {
     let usage = wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
 
     // Load the image from disk and upload it to a GPU texture.
-    let path = std::path::Path::new("/Users/jbatty/Documents/rust/crates/nannou_egui/custom_widgets/assets/nature_1.jpg");
+    let path = std::path::Path::new("assets/images/nannou.png");
     let texture = wgpu::Texture::load_from_path(device, queue, usage, path).unwrap();
 
     Model {
